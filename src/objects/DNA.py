@@ -23,8 +23,6 @@ class DNA:
 
     def getFitness(self, stu_list, proj_list, sup_list: list):
         copy_of_sup_list = copy.deepcopy(sup_list)
-        print('Before calculating the fitness:', self._fitness)
-        print('dna: ', self._dna )
         if self._fitness != float('-inf'):
             return self._fitness
 
@@ -32,19 +30,28 @@ class DNA:
         for i in range(len(self._dna)):
             projIndex = self._dna[i]
             sup_id = proj_list[projIndex].supervisor_id
-            print('checked here')
             if copy_of_sup_list[sup_id].quota == 0:
-                # should assign a random available  proj
+                # should assign a random available proj
+                # new_proj = self._random_assign(copy_of_sup_list, proj_list)
+                # self._dna[i] = new_proj
                 self._fitness = 0
-                return self._fitness
+                # return self._fitness
             else:
                 copy_of_sup_list[sup_id].quota -= 1
                 if self._checkProjChosen(i, projIndex, stu_list):
                     ans = self.__calculate_fitness(projIndex, i, stu_list, proj_list, sup_list)
                     self._fitness = self._fitness + ans
-                    print('after, fitness:', self._fitness)
-        print('before return the fitness:', self._fitness)
         return self._fitness
+
+    def _random_assign(self, sup_list, proj_list):
+        while True:
+            random_proj = random.randint(0, len(proj_list)-1)
+            if random_proj not in self._dna:
+                sup = proj_list[random_proj].getSupervisor()
+                if sup_list[sup].getQuota() > 0:
+                    sup_list[sup].quota -= 1
+                    return random_proj
+
 
     def _checkProjChosen(self, student_id, project_id, student_list:list):
         set_stu_proj = set(student_list[student_id].getProjectList())

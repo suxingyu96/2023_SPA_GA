@@ -8,7 +8,7 @@ logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
 
-file_handler = logging.FileHandler('../../logs/students_projects_allocation_result.log')
+file_handler = logging.FileHandler('../logs/students_projects_allocation_result.log')
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 
@@ -25,10 +25,10 @@ class DataWriter:
             proj = res_list[i]
             sup = proj_list[proj].supervisor_id
             sup_list[sup].quota -= 1
-            if proj in stu_list[i].projectList:
-                rank = stu_list[i].projectList.index(proj)
+            if proj in stu_list[i].getProjectList():
+                rank = stu_list[i].getProjectList().index(proj)
                 satisfied_level = satisfied_levels[rank]
-                satisfied_levels_stat[rank] = satisfied_levels_stat[stu_list[i].projectList.index(proj)] + 1
+                satisfied_levels_stat[rank] = satisfied_levels_stat[stu_list[i].getProjectList().index(proj)] + 1
             else:
                 satisfied_level = satisfied_levels[5]
                 satisfied_levels_stat[5] += 1

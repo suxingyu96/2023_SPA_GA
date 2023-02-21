@@ -147,6 +147,8 @@ from objects.GA import GA
 from objects.data_reader import DataReader
 import time
 
+from objects.data_writer import DataWriter
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -170,21 +172,23 @@ proj_list = dataReader.getProjectList()
 sup_list = dataReader.getSupervisorList()
 stu_list = dataReader.getStudentList()
 
-population_size = 10
-generation = 10
+population_size = 100
+generation = 200
 spa_ga = GA(population_size, generation, stu_list, proj_list, sup_list)
 pop = spa_ga.getPopulation()
-# for item in pop:
-#     print(item)
-#     print(item.getDNA())
-#     print(item.getFitness(stu_list, proj_list, sup_list))
-# print('Generating the next generation:')
-# start_time = start = time.time()
-# for i in range(generation):
-#     spa_ga.nextGeneration()
-#     print(spa_ga.getPopulation())
-# end = time.time()
-# duration = end - start
-# best = spa_ga.getBestDNA()
-# print('Best solution',best.getDNA(), 'Best fitness: ', best.getFitness(stu_list, proj_list, sup_list))
-# print('Time duration: ', duration)
+for item in pop:
+    print(item.getDNA())
+    print(item.getFitness(stu_list, proj_list, sup_list))
+print('Generating the next generation:')
+start_time = start = time.time()
+for i in range(generation):
+    print('the ', i, 'generation')
+    spa_ga.nextGeneration()
+end = time.time()
+duration = end - start
+best = spa_ga.getBestDNA()
+print('Best solution',best[0].getDNA(), 'Best fitness: ', best[1])
+print('Time duration: ', duration)
+dataWriter = DataWriter()
+output_path = "../logs/results.txt"
+dataWriter.getResultFile(best[0].getDNA(), sup_list, proj_list, stu_list, output_path)

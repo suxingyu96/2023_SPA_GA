@@ -49,9 +49,7 @@ class GA:
         currentBestDNA = None
         currentBestDNA_fitness = -1
         for i in self._population:
-            print(i)
             fitness = i.getFitness(self._stu_list, self._proj_list, self._sup_list)
-            print('fitness', fitness)
             if self._generation != 1:
                 if fitness > self._bestDNA_fitness:
                     self._bestDNA_fitness = fitness
@@ -91,8 +89,7 @@ class GA:
                 best_candidate_fitness = self._population[candidate_index].getFitness(self._stu_list, self._proj_list,
                                                                                       self._sup_list)
                 best_candidate_index = candidate_index
-                print('best candidate index:', candidate_index)
         return self._population[best_candidate_index]
 
-
-
+    def getBestDNA(self):
+        return self._bestDNA, self._bestDNA_fitness
