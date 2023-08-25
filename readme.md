@@ -9,6 +9,7 @@ You can install this by cloning from the repository:
 ```git 
 $ git clone git@github.com:suxingyu96/2023_SPA_GA.git
 $ cd 2023_SPA_GA
+$ python3 setup.py install
 ```
 ## Documentation 
 This section contains the steps to execute this tool.
