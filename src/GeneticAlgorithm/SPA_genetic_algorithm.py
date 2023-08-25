@@ -12,9 +12,9 @@ from objects.ParetoVisualScreen import ParetoVisualScreen
 
 
 class SPA_genetic_algorithm:
-    def __init__(self, stu_list, proj_list, sup_list):
-        self._numParents = 400
-        self._mutate_rate = 0.005
+    def __init__(self, stu_list, proj_list, sup_list, pool_size, mutate_rate):
+        self._numParents = pool_size
+        self._mutate_rate = mutate_rate
         self._stu_list = stu_list
         self._proj_list = proj_list
         self._sup_list = sup_list
