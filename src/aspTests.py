@@ -16,7 +16,7 @@ class aspTests(unittest.TestCase):
         stu_list = dataReader.getStudentList()
 
         pool_size = 500
-        mutation_rate = 0.005
+        mutation_rate = 1/(500 * 7)
         GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, pool_size, mutation_rate)
-        bestIndividuals = GA.run(True)
+        bestIndividuals = GA.run(False)
         GA.displayIndividuals(bestIndividuals)

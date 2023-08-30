@@ -51,7 +51,7 @@ class ParetoVisualScreen:
         # plt.plot(positions_y, positions_x, '.', pos_pareto_y, pos_pareto_x, '*')
         lines, = self.ax.plot([], [], '.')
         # pareto_line, = self.ax.plot([], [])
-        pareto_line, = self.ax.plot([], [], '.', color="red")
+        pareto_line, = self.ax.plot([], [], '*', color="red")
         pareto_line.set_xdata(pos_pareto_x)
         pareto_line.set_ydata(pos_pareto_y)
         lines.set_xdata(positions_x)
