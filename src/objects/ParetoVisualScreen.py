@@ -8,9 +8,9 @@ class ParetoVisualScreen:
     def __init__(self):
         # self.graphSize = v2(1, 1)
         plt.ion()
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=(8, 6))
         self.ax = plt.gca()
-        self.ax.set_autoscale_on(True)
+        # self.ax.set_autoscale_on(True)
 
     def Update(self, pool, generation):
         x_list = []

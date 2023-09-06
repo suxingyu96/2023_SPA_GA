@@ -8,7 +8,7 @@ class GA_tests_helper:
         stu_list = []
         proj_list = []
         sup_list = []
-        GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, 0, 0.01)
+        GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, 0, 0.01, 1)
         return GA
     @staticmethod
     def get_population():

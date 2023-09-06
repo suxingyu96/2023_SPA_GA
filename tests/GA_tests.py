@@ -7,16 +7,19 @@ class MyTestCase(unittest.TestCase):
 
     def test_crossover_PMX(self):
         GA = GA_tests_helper.get_GA()
-        start = 3
-        end = 7
-        chromosome_a = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        chromosome_b = [9, 3, 7, 8, 2, 6, 5, 1, 4]
+        start = 2
+        end = 8
+        # chromosome_a = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        chromosome_a = [147, 12, 9, 125, 39, 73, 89, 30, 98, 19, 127, 140, 129, 14, 54, 17, 67, 66, 126, 86, 101, 59, 11]
+        chromosome_b = [125, 92, 147, 141, 25, 24, 108, 43, 84, 115, 62, 5, 56, 113, 112, 114, 75, 99, 39, 96, 31, 69, 83]
 
-        child = GA.crossover_PMX(chromosome_b, chromosome_a, start, end)
+        # chromosome_b = [9, 3, 7, 8, 2, 6, 5, 1, 4]
 
+        childs = GA.crossover_PMX(chromosome_a, chromosome_b, start, end)
+        print(childs[1])
         expected_child = [9, 3, 2, 4, 5, 6, 7, 1, 8]
-        self.assertEqual(len(chromosome_a), len(child))
-        self.assertEqual(expected_child, child)
+        self.assertEqual(len(chromosome_a), len(childs[0]))
+        self.assertEqual(expected_child, childs[0])
 
     def test_swap_mutation(self):
         GA = GA_tests_helper.get_GA()

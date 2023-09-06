@@ -53,88 +53,6 @@ class MultiObjectiveHelper:
 
         return sorted_pool
 
-    # @staticmethod
-    # def CalculateStudentsFitness(pool, stu_list):
-    #     for individual in pool:
-    #         selectedProjectsRank = [0, 0, 0, 0, 0]
-    #         individual_genes = individual.getGenes()
-    #         for i in range(len(individual_genes)):
-    #             stu_proj_preference_list = stu_list[i].getProjectList()
-    #             #         check if the student chose this project and get the rank
-    #             if individual_genes[i] in stu_proj_preference_list:
-    #                 proj_rank = stu_proj_preference_list.index(individual_genes[i])
-    #                 # print('project_rank', proj_rank)
-    #                 selectedProjectsRank[proj_rank] += 1
-    #         individual.All_Project_Ranks = selectedProjectsRank
-    #         # studentFitness = 65536 * selectedProjectsRank[0] \
-    #         #                  + 256 * selectedProjectsRank[1] \
-    #         #                  + 16 * selectedProjectsRank[2] + \
-    #         #                  4 * selectedProjectsRank[3] \
-    #         #                  + 2 * selectedProjectsRank[4]
-    #         studentFitness = 25 * selectedProjectsRank[0] \
-    #                          + 16 * selectedProjectsRank[1] \
-    #                          + 9 * selectedProjectsRank[2] + \
-    #                          4 * selectedProjectsRank[3] \
-    #                          + 1 * selectedProjectsRank[4]
-    #         individual.StudentsFitness = studentFitness + 1
-
-    # @staticmethod
-    # def CalculateSupervisorsFitness(pool, proj_list, sup_list):
-    #     for individual in pool:
-    #         selectedSupervisorsAndNum = {}
-    #         individual_genes = individual.getGenes()
-    #         oversubscribedProjectIDAndSupervisors = {}
-    #         satisfactionOfSupervisors = 0
-    #         for i in range(len(individual_genes)):
-    #             sup_id = proj_list[individual_genes[i]].getSupervisor()
-    #             if sup_id not in selectedSupervisorsAndNum:
-    #                 selectedSupervisorsAndNum.update({sup_id: [individual_genes[i]]})
-    #             else:
-    #                 existing_projectlist = selectedSupervisorsAndNum[sup_id]
-    #                 existing_projectlist.append(individual_genes[i])
-    #                 selectedSupervisorsAndNum.update({sup_id: existing_projectlist})
-    #             # cur_num = len(selectedSupervisorsAndNum.get(sup_id))
-    #             cur_num = len(selectedSupervisorsAndNum[sup_id])
-    #             quota = sup_list[sup_id].quota
-    #             if cur_num > quota:
-    #                 # print('exceeds quota!')
-    #                 if sup_id not in oversubscribedProjectIDAndSupervisors.keys():
-    #                     oversubscribedProjectIDAndSupervisors.update({sup_id: [sup_id]})
-    #             #     else:
-    #             #         unavailableProjectList = oversubscribedProjectIDAndSupervisors.get(sup_id)
-    #             #         unavailableProjectList.append(individual_genes[i])
-    #             #         oversubscribedProjectIDAndSupervisors.update({sup_id: unavailableProjectList})
-    #
-    #         # while len(oversubscribedProjectIDAndSupervisors) > 0:
-    #         #     MultiObjectiveHelper.RepairChromosome(individual, oversubscribedProjectIDAndSupervisors, proj_list)
-    #         #     MultiObjectiveHelper.CalculateSupervisorsFitness(pool, proj_list, sup_list)
-    #
-    #         fitness_workload = 0
-    #         fitness_satisfaction = 0
-    #         if len(oversubscribedProjectIDAndSupervisors) > 0:
-    #             individual.SupervisorsFitness = 0 - len(oversubscribedProjectIDAndSupervisors)
-    #             continue
-    #         else:
-    #             for sup, selected_proj_list in selectedSupervisorsAndNum.items():
-    #                 quota = sup_list[sup].getQuota()
-    #                 cur_stu_num = len(selected_proj_list)
-    #                 if cur_stu_num > quota:
-    #                     fitness_workload = 0 - len(oversubscribedProjectIDAndSupervisors)
-    #                     break
-    #                 else:
-    #                     # if cur_stu_num <= quota / 2 + 1:
-    #                     #     fitness_workload = fitness_workload + (cur_stu_num * 10) ^ 2
-    #                     # else:
-    #                     #     fitness_workload = fitness_workload + cur_stu_num
-    #                     fitness_workload = fitness_workload + (quota - cur_stu_num) ^ 2
-    #                     sup_preference_list = sup_list[sup].getProjectList()
-    #
-    #                     # for proj in selected_proj_list:
-    #                     #     rank = sup_preference_list.index(proj)
-    #                     #     fitness_satisfaction = fitness_satisfaction + ((5 - rank) * 4) ^ 2
-    #         individual.SupervisorsFitness = fitness_satisfaction + fitness_workload
-    #         individual.SelectedSupervisorsAndProjects = selectedSupervisorsAndNum
-
     @staticmethod
     def NormalizeFitnessValues(pool):
         maxStudentsFitness = max(pool, key=attrgetter('StudentsFitness')).StudentsFitness
@@ -192,7 +110,6 @@ class MultiObjectiveHelper:
         slice_list = MultiObjectiveHelper.getSlices(bestIndividuals)
         sum_area = 0
         for slice in slice_list:
-            print(slice.Area)
             sum_area += slice.Area
 
         return sum_area

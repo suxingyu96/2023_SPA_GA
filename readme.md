@@ -36,41 +36,27 @@ The data of projects should be stored as:
 
 
 
-The **DataReader** object generates lists from corresponding paths and check the validity of data.
+Setting configuration in **src/Config.py**, an example is listed below. 
 ```python
-from objects.data_reader import DataReader
-path_list = []
-stu_data_path = str("path of students data file")
-sup_data_path = str("path of supervisors data file")
-proj_data_path = str("path of projects data file")
+class Config:
 
-dataReader = DataReader(sup_data_path, stu_data_path, proj_data_path)
+    population_size = 500
+    mutation_rate = 1/(population_size * 7)
+    crossover_rate = 0.5
+    data_visualization = True
 
-proj_list = dataReader.getProjectList()
-sup_list = dataReader.getSupervisorList()
-stu_list = dataReader.getStudentList()
+
+    students_file_path = str("path of students data")
+    projects_file_path = str("path of projects data")
+    supervisors_file_path = str("path of supervisors data")
 ```
 
 ### Run the GA
 After creating the lists of data, it is time to run the GA. 
 
-- Creating a **SPA_genetic_algorithm** instance and make the _lists_ as parameters and set the _population size_ and _mutation rate_, then the GA tool is initialized.
-```python
-from GeneticAlgorithm.SPA_genetic_algorithm import SPA_genetic_algorithm
-population_size = 200
-mutation_rate = 0.005
-GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, population_size, mutation_rate)
+Executing the file in terminal:
+```commandline
+python3 main_run_GA.py
 ```
-- If you want to visualize the evolution process, set a variable **ParetoScreen** as **True**, or as **False** 
-```python
-ParetoScreen = True
-```
-- By calling the **.run(showParetoScreen)** to run the GA and a list of Pareto Optimal solutions will be returned after 
-termination of the GA.
-```python
-pareto_solutions = GA.run(ParetoScreen)
-```
-- By calling the **.displayIndividuals(pareto_solutions)** method to display the detail of Pareto optimal solutions.
-```python
-GA.displayIndividuals(pareto_solutions)
-```
+
+
