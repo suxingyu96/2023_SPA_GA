@@ -1,62 +1,97 @@
-# A Genetic Algorithm for Student-Project Allocation (SPA) Problem
-An algorithm in python that allocate project to students and also considers students' preferences over projects, supervisors' capacity, workload and preferences 
+# How to use - A Genetic Algorithm for Student-Project Allocation (SPA) Problem
+This GA allocates project to students and also considers students' preferences over projects, supervisors' capacity, workload and preferences 
 over projects using NSGA-II. This algorithm has the ability to find optimal solutions for decision makers to make trade-off.
 
-## Installation
-This tool needs Python 3.5 or above, and relies on `NumPy<http://www.numpy.org/>`.
+After the installation of GA package:
 
-You can install this by cloning from the repository:
-```git 
-$ git clone git@github.com:suxingyu96/2023_SPA_GA.git
-$ cd 2023_SPA_GA
-$ python3 setup.py install
-```
-## Documentation 
-This section contains the steps to execute this tool.
+## How to set the parameters
+There are five parameters that can be set by users.
+1. pool_size: the number of population in every generation, it should be an integer.
+2. mutation_rate: a float number between 0 and 1.
+3. crossover_rate: a float number between 0 and 1.
+4. max_generations: An integer, it max iteration times.
+5. max_noImprovementCount: An integer, should be lower than max_generations
 
-### Data import
-
-This tool includes a DataReader to import data in **.txt** or **.csv** format from local files.
-
-The data of students should be stored as:
-
-| student ID | project 1  |  project 2 |  project 3 |project 4 | project 5 |
-|------------|-----------:|-----------:|-----------:|---------:|----------:|
-
-
-The data of supervisors should be stored as:
-
-| supervisor ID | quota |project 1 | project 2 | project ... |
-|-------|:----------|----------:|------------:|---------:|
-
-The data of projects should be stored as:
-
-| project ID | supervisor ID |
-|-------|:----------|
-
-
-
-Setting configuration in **src/Config.py**, an example is listed below. 
+## To create a instance of GA
+After setting up the parameters and [import data](https://github.com/suxingyu96/2023_SPA_GA#documentation), an instance of GA can be created.
 ```python
-class Config:
-
-    population_size = 500
-    mutation_rate = 1/(population_size * 7)
-    crossover_rate = 0.5
-    data_visualization = True
-
-
-    students_file_path = str("path of students data")
-    projects_file_path = str("path of projects data")
-    supervisors_file_path = str("path of supervisors data")
+GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, 
+                           pool_size, mutation_rate, 
+                           crossover_rate, max_generations, 
+                           max_noImprovementCount)
 ```
 
-### Run the GA
-After creating the lists of data, it is time to run the GA. 
-
-Executing the file in terminal:
-```commandline
-python3 main_run_GA.py
+If you want to visualize the evolution process, create a new variable:
+```python
+visualization_screnn = True
 ```
+
+## To execute the GA:
+```python
+pareto_solutions = GA.run()
+GA.displayIndividuals(pareto_solutions)
+```
+When the GA is terminated, solutions belong to Pareto front will be returned to variable _**pareto_solutions**_ 
+and displayed in the console.
+
+# How to use the Benchmark tool
+The benchmark tool is used to automate the performance tests of GA with different parameters.
+
+## Tests with mutation rates
+1. Create a list of mutation rates and set up other parameters:
+```python
+mutation_rate_list = [0.01, 0.025, 0.05, 0.1, 0.15]
+pool_size = 600
+crossover_rate = 0.8
+max_generations = 1000
+max_noImprovementCount = 100
+```
+
+2. Run the benchmark tool
+ 
+```python
+Benchmark.run_mutation_rates(stu_list, sup_list, proj_list, pool_size, 
+                             mutation_rate_list, crossover_rate, 
+                             max_generations, max_noImprovementCount)
+```
+When the benchmark terminates, a graph will show how GA performs as the Figure 5.1 in thesis.
+
+## Tests with crossover rates
+1. Create a list of crossover rates and set up other parameters:
+```python
+crossover_rates_list = [0.5, 0.8, 1]
+pool_size = 600
+mutation_rate = 0.01
+max_generations = 1000
+max_noImprovementCount = 100
+```
+
+2. Run the benchmark tool
+
+```python
+Benchmark.run_crossover_rates(stu_list, sup_list, proj_list, 
+                              pool_size, mutation_rate, crossover_rates_list, 
+                              max_generations, max_noImprovementCount)
+```
+When the benchmark terminates, a graph will show how GA performs as the Figure 5.2 in thesis.
+
+## Tests with population sizes
+1. Create a list of population sizes and set up other parameters:
+```python
+pool_sizes = [300, 600, 1000]
+mutation_rate = 0.01
+crossover_rate = 0.8
+max_generations = 1000
+max_noImprovementCount = 100
+```
+
+2. Run the benchmark tool
+
+```python
+Benchmark.run_population_sizes(stu_list, sup_list, proj_list, pool_sizes, 
+                               mutation_rate, crossover_rate, max_generations, 
+                               max_noImprovementCount)
+```
+
 
 

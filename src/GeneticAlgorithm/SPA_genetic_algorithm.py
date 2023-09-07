@@ -11,7 +11,8 @@ from objects.ParetoVisualScreen import ParetoVisualScreen
 
 
 class SPA_genetic_algorithm:
-    def __init__(self, stu_list, proj_list, sup_list, pool_size, mutate_rate, crossover_rate):
+    def __init__(self, stu_list, proj_list, sup_list, pool_size, mutate_rate,
+                 crossover_rate, max_generations, max_noImprovementCount):
         self._numParents = pool_size
         self._mutate_rate = mutate_rate
         self._stu_list = stu_list
@@ -19,8 +20,8 @@ class SPA_genetic_algorithm:
         self._sup_list = sup_list
         self._geneSet = self.__create_gene_set()
         self._pool = self.generate_first_population()
-        self._max_generations = 2000
-        self._max_noImprovementCount = 100
+        self._max_generations = max_generations
+        self._max_noImprovementCount = max_noImprovementCount
         self._crossover_rate = crossover_rate
         self._best_students_fitness_record = []
         self._best_supervisors_fitness_record = []
@@ -41,7 +42,7 @@ class SPA_genetic_algorithm:
             pool[i] = individual
         return pool
 
-    def run(self, paretoScreen, pool=None):
+    def run(self, paretoScreen=False, pool=None):
         if pool is not None:
             print(pool)
             self._pool = pool
@@ -68,17 +69,8 @@ class SPA_genetic_algorithm:
             bestIndividuals = self.getBestIndividuals(self._pool)
             if self._generation % 4 == 0:
                 if len(bestIndividuals) < 2:
-                    if bestIndividuals[0].CrowdingDistance != float(inf):
-                        exit(1)
                     self.__record_current_fitness(bestIndividuals[0], bestIndividuals[0])
                 else:
-                    if bestIndividuals[0].CrowdingDistance != float(inf)\
-                            or bestIndividuals[1].CrowdingDistance != float(inf):
-                        print('cd',bestIndividuals[0].CrowdingDistance)
-                        print('cd',bestIndividuals[1].CrowdingDistance)
-                        for item in bestIndividuals:
-                            print(item.CrowdingDistance)
-                        exit(1)
                     self.__record_current_fitness(bestIndividuals[0], bestIndividuals[1])
 
             print("No.{0} Generation:".format(self._generation))
@@ -171,9 +163,9 @@ class SPA_genetic_algorithm:
                 parent = self.tournamentSelection(candidate_a, candidate_b)
                 candidate_a, candidate_b = self.get_candidates(self._pool)
                 donor = self.tournamentSelection(candidate_a, candidate_b)
-                while parent == donor:
-                    candidate_a, candidate_b = self.get_candidates(self._pool)
-                    donor = self.tournamentSelection(candidate_a, candidate_b)
+                # while parent == donor:
+                #     candidate_a, candidate_b = self.get_candidates(self._pool)
+                #     donor = self.tournamentSelection(candidate_a, candidate_b)
                 start, end = self._generate_two_points(len(parent.getGenes()))
                 # print('start and end', start, end)
                 children_genes = []
@@ -197,27 +189,11 @@ class SPA_genetic_algorithm:
                 child_chromosome = Chromosome(child_genes)
             # while child_chromosome in self._pool or child_chromosome in offspring:
                 # or child_chromosome == parent or child_chromosome == donor or \
-                if self.__is_child_acceptable(child_chromosome, offspring):
-                    offspring.append(child_chromosome)
-                    # self.DoMutation(child_genes)
-                    # child_chromosome = Chromosome(child_genes)
-                    # count += 1
-                    # lenOfGenes = len(child_genes)
-                    # child_genes = self.generate_parent(self._geneSet, lenOfGenes)
-                    # child_chromosome = Chromosome(child_genes)
-                # if not self.__is_child_acceptable(child_chromosome, offspring):
-                #     count += 1
-                #     lenOfGenes = len(child_genes)
-                #     child_genes = self.generate_parent(self._geneSet, lenOfGenes)
-                #     child_chromosome = Chromosome(child_genes)
-                # offspring.append(child_chromosome)
+                while not self.__is_child_acceptable(child_chromosome, offspring):
+                    self.DoMutation(child_genes)
+                    child_chromosome = Chromosome(child_genes)
+                offspring.append(child_chromosome)
 
-        # while len(offspring) < len(self._pool):
-        #     child_genes = self.generate_parent(self._geneSet, 51)
-        #     child_chromosome = Chromosome(child_genes)
-        #     if self.__is_child_acceptable(child_chromosome, offspring):
-        #         count += 1
-        #         offspring.append(child_chromosome)
 
         print('count', count)
         return offspring
@@ -238,11 +214,6 @@ class SPA_genetic_algorithm:
                     # print('project_rank', proj_rank)
                     selectedProjectsRank[proj_rank] += 1
             individual.All_Project_Ranks = selectedProjectsRank
-            # studentFitness = 65536 * selectedProjectsRank[0] \
-            #                  + 256 * selectedProjectsRank[1] \
-            #                  + 16 * selectedProjectsRank[2] + \
-            #                  4 * selectedProjectsRank[3] \
-            #                  + 2 * selectedProjectsRank[4]
             studentFitness = 25 * selectedProjectsRank[0] \
                              + 16 * selectedProjectsRank[1] \
                              + 9 * selectedProjectsRank[2] + \
@@ -306,7 +277,9 @@ class SPA_genetic_algorithm:
                             rank = sup_preference_list.index(proj)
                             fitness_satisfaction = fitness_satisfaction + (5 - rank) ^ 2
             individual.SupervisorsFitness = fitness_satisfaction + fitness_workload
-            individual.SelectedSupervisorsAndProjects = selectedSupervisorsAndNum
+            sorted_list_selectedSupervisorsAndNum = sorted(selectedSupervisorsAndNum.items())
+            sorted_selectedSupervisorsAndNum = dict(sorted_list_selectedSupervisorsAndNum)
+            individual.SelectedSupervisorsAndProjects = sorted_selectedSupervisorsAndNum
 
     def DoMutation(self, child_genes):
         for i in range(len(child_genes)):
@@ -455,10 +428,10 @@ class SPA_genetic_algorithm:
             print('i', i.All_Project_Ranks)
             print(i.CrowdingDistance)
             sup = i.SelectedSupervisorsAndProjects
-            num_list = []
-            for projs in sup.values():
-                num_list.append(len(projs))
-            print('supervisors:', num_list)
+            # num_list = []
+            # for projs in sup.values():
+            #     num_list.append(len(projs))
+            print('supervisors:', sup)
             # selectedlist_supAndproj = i.SelectedSupervisorsAndProjects
             # for k, v in selectedlist_supAndproj.items():
             #     print('sup: ', k, ' num: ', len(v))
