@@ -17,7 +17,7 @@ def main():
     mutation_rate = Config.mutation_rate
     crossover_rate = Config.crossover_rate
     visualize_data_screen = Config.data_visualization
-    GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, pool_size, mutation_rate, crossover_rate)
+    GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, pool_size, mutation_rate, crossover_rate, 1000, 50)
     bestIndividuals = GA.run(visualize_data_screen)
     GA.displayIndividuals(bestIndividuals)
 

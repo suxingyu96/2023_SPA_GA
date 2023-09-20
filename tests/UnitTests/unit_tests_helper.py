@@ -2,14 +2,17 @@ from GeneticAlgorithm.SPA_genetic_algorithm import SPA_genetic_algorithm
 from objects.Chromosome import Chromosome
 
 
-class GA_tests_helper:
+class unit_tests_helper:
     @staticmethod
     def get_GA():
         stu_list = []
         proj_list = []
         sup_list = []
-        GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, 0, 0.01, 1)
+        max_generations = 50
+        max_noImprovementCount =5
+        GA = SPA_genetic_algorithm(stu_list, proj_list, sup_list, 0, 0.01, 1, max_generations, max_noImprovementCount)
         return GA
+
     @staticmethod
     def get_population():
         chromosome_a = Chromosome([1])

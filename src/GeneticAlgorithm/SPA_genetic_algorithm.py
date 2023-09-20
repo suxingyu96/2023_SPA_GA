@@ -1,11 +1,13 @@
 import copy
 import random
 import time
-from math import inf
-
 import numpy as np
 from itertools import groupby
-from MultiObjectiveHelper.MultiObjectiveHelper import MultiObjectiveHelper
+
+from GeneticAlgorithm.Operators.CrossoverOperators import CrossoverOperators
+from GeneticAlgorithm.Operators.MutationOperators import MutationOperators
+from GeneticAlgorithm.Operators.TournamentSelectionOperator import TournamentSelectionOperator
+from GeneticAlgorithm.ParetoFrontHelper import ParetoFrontHelper
 from objects.Chromosome import Chromosome
 from objects.ParetoVisualScreen import ParetoVisualScreen
 
@@ -26,13 +28,12 @@ class SPA_genetic_algorithm:
         self._best_students_fitness_record = []
         self._best_supervisors_fitness_record = []
         self._generation = 0
+        self._bestIndividuals = []
 
     def generate_first_population(self):
-        lenOfgenes = len(self._stu_list)
-        # pool = [self.generate_parent(self._geneSet, lenOfgenes) for _ in range(self._numParents)]
         pool = []
         while len(pool) < self._numParents:
-            genes = self.generate_parent(self._geneSet, lenOfgenes)
+            genes = self.generate_parent()
             if genes not in pool:
                 pool.append(genes)
 
@@ -47,10 +48,9 @@ class SPA_genetic_algorithm:
             print(pool)
             self._pool = pool
         print('generation', self._generation)
-        self.CalculateStudentsFitness(self._pool, self._stu_list)
-        self.CalculateSupervisorsFitness(self._pool, self._proj_list, self._sup_list)
-        # self._pool = MultiObjectiveHelper.UpdatePopulationFitness(self._pool, self._stu_list, self._proj_list, self._sup_list)
-        self._pool = MultiObjectiveHelper.UpdatePopulationFitness(self._pool)
+        self.CalculateStudentsFitness(self._pool)
+        self.CalculateSupervisorsFitness(self._pool)
+        self._pool = ParetoFrontHelper.UpdatePopulationRankAndCrowdingDistance(self._pool)
 
         if paretoScreen:
             paretoFrontWindow = ParetoVisualScreen()
@@ -59,33 +59,26 @@ class SPA_genetic_algorithm:
         isConverged = False
         NoImprovementCount = 0
         preConvergenceArea = 0
-        bestIndividuals = []
 
         while not isConverged:
             if paretoScreen:
                 paretoFrontWindow.Update(self._pool, self._generation)
                 time.sleep(1)
 
-            bestIndividuals = self.getBestIndividuals(self._pool)
+            self._bestIndividuals = self.getBestIndividuals()
             if self._generation % 4 == 0:
-                if len(bestIndividuals) < 2:
-                    self.__record_current_fitness(bestIndividuals[0], bestIndividuals[0])
-                else:
-                    self.__record_current_fitness(bestIndividuals[0], bestIndividuals[1])
+                self.__record_current_best_fitness()
 
-            print("No.{0} Generation:".format(self._generation))
-            print('The bests:', len(bestIndividuals))
-            self.displayIndividuals(bestIndividuals)
-
-
-
+            print("No.{0} Generation:".format(self._generation),
+                  'total num:', len(self._pool),
+                  'mutation rate', self._mutate_rate)
+            print('The bests:', len(self._bestIndividuals))
+            self.displayIndividuals(self._bestIndividuals)
 
             # produce offspring
             offspring = self.generateOffspring()
-            self.CalculateStudentsFitness(offspring, self._stu_list)
-            self.CalculateSupervisorsFitness(offspring, self._proj_list, self._sup_list)
             self._pool.extend(offspring)
-            self._pool = MultiObjectiveHelper.UpdatePopulationFitness(self._pool)
+            self._pool = ParetoFrontHelper.UpdatePopulationRankAndCrowdingDistance(self._pool)
 
             # Sort all individuals and produce new population
             newPopulation = []
@@ -95,7 +88,7 @@ class SPA_genetic_algorithm:
                     newPopulation.append(i)
                 if len(newPopulation) >= 0.9 * self._numParents:
                     break
-            #
+
             while len(newPopulation) < self._numParents:
                 randomIndividual = random.choice(sorted_pool)
                 if randomIndividual not in newPopulation and randomIndividual.Rank != -1:
@@ -104,29 +97,27 @@ class SPA_genetic_algorithm:
             self._pool.clear()
             self._pool = newPopulation
             self._generation += 1
-            NoImprovementCount, preConvergenceArea = self.__update_no_improvement_count_and_area(bestIndividuals, NoImprovementCount, preConvergenceArea)
-            # sorted_bestIndividuals = sorted(bestIndividuals, key=lambda x: x.SupervisorsFitness)
-            # curArea = MultiObjectiveHelper.CalculateArea(sorted_bestIndividuals)
-            # if abs(curArea - preConvergenceArea) < 0.01 * preConvergenceArea:
-            #     NoImprovementCount += 1
-            # else:
-            #     NoImprovementCount = 0
-            #     preConvergenceArea = curArea
-
-            print('no improvement count:', NoImprovementCount)
+            NoImprovementCount, preConvergenceArea = self.__update_no_improvement_count_and_area \
+                (NoImprovementCount, preConvergenceArea)
             isConverged = self._generation >= self._max_generations or NoImprovementCount > self._max_noImprovementCount
-        return bestIndividuals
+        return self._bestIndividuals
 
-    def __update_no_improvement_count_and_area(self, bestIndividuals, NoImprovementCount, preConvergenceArea):
-        sorted_bestIndividuals = sorted(bestIndividuals, key=lambda x: x.SupervisorsFitness)
-        curArea = MultiObjectiveHelper.CalculateArea(sorted_bestIndividuals)
+    def __update_no_improvement_count_and_area(self, NoImprovementCount, preConvergenceArea):
+        sorted_bestIndividuals = sorted(self._bestIndividuals, key=lambda x: x.SupervisorsFitness)
+        curArea = ParetoFrontHelper.CalculateArea(sorted_bestIndividuals)
         if abs(curArea - preConvergenceArea) < 0.01 * preConvergenceArea:
             NoImprovementCount += 1
         else:
             NoImprovementCount = 0
             preConvergenceArea = curArea
         return NoImprovementCount, preConvergenceArea
-    def __record_current_fitness(self, individual_a, individual_b):
+
+    def __record_current_best_fitness(self):
+        if len(self._bestIndividuals) < 2:
+            individual_a, individual_b = self._bestIndividuals[0]
+        else:
+            individual_a, individual_b = self._bestIndividuals[0], self._bestIndividuals[1]
+
         best_supervisors_fitness = max(individual_a.SupervisorsFitness, individual_b.SupervisorsFitness)
         best_students_fitness = max(individual_a.StudentsFitness, individual_b.StudentsFitness)
         self._best_supervisors_fitness_record.append(best_supervisors_fitness)
@@ -143,75 +134,63 @@ class SPA_genetic_algorithm:
 
         return geneSet
 
-    def generate_parent(self, geneSet, lenOfGenes):
-        return random.sample(geneSet, lenOfGenes)
+    def generate_parent(self):
+        len_of_genes = len(self._stu_list)
+        return random.sample(self._geneSet, len_of_genes)
 
     def generateOffspring(self):
         offspring = []
-        print('num of pool', len(self._pool))
-        print('mutation rate:', self._mutate_rate)
-        print('crossover rate:', self._crossover_rate)
-        count = 0
+
         while len(offspring) < 0.95 * len(self._pool):
-            rate = random.uniform(0, 1)
             children_genes = []
+
+            parent, donor = self.generate_parent_and_donor()
+
+            rate = random.uniform(0, 1)
             if rate < self._crossover_rate:
-            # crossover
-            # parent = self.tournamentSelection()
-            # donor = self.tournamentSelection()
-                candidate_a, candidate_b = self.get_candidates(self._pool)
-                parent = self.tournamentSelection(candidate_a, candidate_b)
-                candidate_a, candidate_b = self.get_candidates(self._pool)
-                donor = self.tournamentSelection(candidate_a, candidate_b)
-                # while parent == donor:
-                #     candidate_a, candidate_b = self.get_candidates(self._pool)
-                #     donor = self.tournamentSelection(candidate_a, candidate_b)
-                start, end = self._generate_two_points(len(parent.getGenes()))
-                # print('start and end', start, end)
-                children_genes = []
-                children_gene_a = self.crossover_PMX(parent.getGenes(), donor.getGenes(), start, end)
-                children_gene_b = self.crossover_PMX(donor.getGenes(), parent.getGenes(), start, end)
+                children_gene_a = self.DoCrossover(parent, donor)
             else:
-                candidate_a, candidate_b = self.get_candidates(self._pool)
-                child = self.tournamentSelection(candidate_a, candidate_b)
+                child = TournamentSelectionOperator.tournamentSelection(parent, donor)
                 children_gene_a = copy.deepcopy(child.getGenes())
-                children_gene_b = copy.deepcopy(candidate_b.getGenes())
-            #     child = self.tournamentSelection(candidate_a, candidate_b)
-            #     child_genes = child.getGenes()
+
             children_genes.append(children_gene_a)
-            # children_genes.append(children_gene_b)
-            # do mutation
-            # rate = random.uniform(0, 1)
-            # print('parent:',parent.getGenes())
-            # print('donor:',donor.getGenes())
+
             for child_genes in children_genes:
                 self.DoMutation(child_genes)
                 child_chromosome = Chromosome(child_genes)
-            # while child_chromosome in self._pool or child_chromosome in offspring:
-                # or child_chromosome == parent or child_chromosome == donor or \
                 while not self.__is_child_acceptable(child_chromosome, offspring):
                     self.DoMutation(child_genes)
                     child_chromosome = Chromosome(child_genes)
                 offspring.append(child_chromosome)
 
-
-        print('count', count)
+        self.CalculateStudentsFitness(offspring)
+        self.CalculateSupervisorsFitness(offspring)
         return offspring
+
+    def generate_parent_and_donor(self):
+        candidate_a, candidate_b = TournamentSelectionOperator.get_candidates(self._pool)
+        parent = TournamentSelectionOperator.tournamentSelection(candidate_a, candidate_b)
+        candidate_a, candidate_b = TournamentSelectionOperator.get_candidates(self._pool)
+        donor = TournamentSelectionOperator.tournamentSelection(candidate_a, candidate_b)
+        while parent == donor:
+            candidate_a, candidate_b = TournamentSelectionOperator.get_candidates(self._pool)
+            donor = TournamentSelectionOperator.tournamentSelection(candidate_a, candidate_b)
+        return parent, donor
 
     def __is_child_acceptable(self, child, offspring):
         if child in self._pool or child in offspring:
             return False
         return True
-    def CalculateStudentsFitness(self, pool, stu_list):
+
+    def CalculateStudentsFitness(self, pool):
         for individual in pool:
             selectedProjectsRank = [0, 0, 0, 0, 0]
             individual_genes = individual.getGenes()
             for i in range(len(individual_genes)):
-                stu_proj_preference_list = stu_list[i].getProjectList()
+                stu_proj_preference_list = self._stu_list[i].getProjectList()
                 #         check if the student chose this project and get the rank
                 if individual_genes[i] in stu_proj_preference_list:
                     proj_rank = stu_proj_preference_list.index(individual_genes[i])
-                    # print('project_rank', proj_rank)
                     selectedProjectsRank[proj_rank] += 1
             individual.All_Project_Ranks = selectedProjectsRank
             studentFitness = 25 * selectedProjectsRank[0] \
@@ -221,37 +200,24 @@ class SPA_genetic_algorithm:
                              + 1 * selectedProjectsRank[4]
             individual.StudentsFitness = studentFitness + 1
 
-    # @staticmethod
-
-    def CalculateSupervisorsFitness(self, pool, proj_list, sup_list):
+    def CalculateSupervisorsFitness(self, pool):
         for individual in pool:
             selectedSupervisorsAndNum = {}
             individual_genes = individual.getGenes()
             oversubscribedProjectIDAndSupervisors = {}
-            satisfactionOfSupervisors = 0
             for i in range(len(individual_genes)):
-                sup_id = proj_list[individual_genes[i]].getSupervisor()
+                sup_id = self._proj_list[individual_genes[i]].getSupervisor()
                 if sup_id not in selectedSupervisorsAndNum:
                     selectedSupervisorsAndNum.update({sup_id: [individual_genes[i]]})
                 else:
                     existing_projectlist = selectedSupervisorsAndNum[sup_id]
                     existing_projectlist.append(individual_genes[i])
                     selectedSupervisorsAndNum.update({sup_id: existing_projectlist})
-                # cur_num = len(selectedSupervisorsAndNum.get(sup_id))
                 cur_num = len(selectedSupervisorsAndNum[sup_id])
-                quota = sup_list[sup_id].quota
+                quota = self._sup_list[sup_id].quota
                 if cur_num > quota:
-                    # print('exceeds quota!')
                     if sup_id not in oversubscribedProjectIDAndSupervisors.keys():
                         oversubscribedProjectIDAndSupervisors.update({sup_id: [sup_id]})
-                #     else:
-                #         unavailableProjectList = oversubscribedProjectIDAndSupervisors.get(sup_id)
-                #         unavailableProjectList.append(individual_genes[i])
-                #         oversubscribedProjectIDAndSupervisors.update({sup_id: unavailableProjectList})
-
-            # while len(oversubscribedProjectIDAndSupervisors) > 0:
-            #     MultiObjectiveHelper.RepairChromosome(individual, oversubscribedProjectIDAndSupervisors, proj_list)
-            #     MultiObjectiveHelper.CalculateSupervisorsFitness(pool, proj_list, sup_list)
 
             fitness_workload = 0
             fitness_satisfaction = 0
@@ -260,18 +226,14 @@ class SPA_genetic_algorithm:
                 continue
             else:
                 for sup, selected_proj_list in selectedSupervisorsAndNum.items():
-                    quota = sup_list[sup].getQuota()
+                    quota = self._sup_list[sup].getQuota()
                     cur_stu_num = len(selected_proj_list)
                     if cur_stu_num > quota:
                         fitness_workload = 0 - len(oversubscribedProjectIDAndSupervisors)
                         break
                     else:
-                        # if cur_stu_num <= quota / 2 + 1:
-                        #     fitness_workload = fitness_workload + (cur_stu_num * 10) ^ 2
-                        # else:
-                        #     fitness_workload = fitness_workload + cur_stu_num
                         fitness_workload = fitness_workload + (quota - cur_stu_num) * 2 ^ 2
-                        sup_preference_list = sup_list[sup].getProjectList()
+                        sup_preference_list = self._sup_list[sup].getProjectList()
 
                         for proj in selected_proj_list:
                             rank = sup_preference_list.index(proj)
@@ -284,142 +246,42 @@ class SPA_genetic_algorithm:
     def DoMutation(self, child_genes):
         for i in range(len(child_genes)):
             rate = random.uniform(0, 1)
-            # if rate < self._mutate_rate + random.uniform(0, 1-self._generation/self._max_generations):
+            self._mutate_rate = 1 - self._generation / self._max_generations
             if rate < self._mutate_rate:
                 child_genes = self.mutate(child_genes)
 
-    def new_mutation(self, genes, i):
-        genes = np.array(genes)
-        point_1, point_2 = np.random.choice(len(genes), 2)
-        start, end = min([point_1, point_2]), max([point_1, point_2])
-        scrambled_order = np.random.choice(np.arange(start, end), end - start)
-        genes[start:end] = genes[scrambled_order]
+    def DoCrossover(self, parent, donor):
+        start, end = self._generate_two_points()
+        child_gene = CrossoverOperators.crossover_PMX(parent.getGenes(), donor.getGenes(), start, end)
+        return child_gene
 
-    def getBestIndividuals(self, pool):
-        sorted_pool = sorted(pool, key=lambda x: (x.Rank, 0-x.CrowdingDistance))
+    def getBestIndividuals(self):
+        sorted_pool = sorted(self._pool, key=lambda x: (x.Rank, 0 - x.CrowdingDistance))
         ranks = []
         for k, g in groupby(sorted_pool, lambda x: x.Rank):
             ranks.append(list(g))
-        for item in ranks[0]:
-            if item.Rank == -1:
-                exit(1)
         return ranks[0]
 
     def mutate(self, genes):
         mutation_strategies = ['inversion', 'rotation', 'scramble', 'swap']
         mutation_strategy = random.choice(mutation_strategies)
-        start, end = self._generate_two_points(len(genes))
-        # return self.scramble_mutation(genes, start, end)
+        start, end = self._generate_two_points()
         if mutation_strategy is 'rotation':
-            return self.rotation_mutation(genes, start, end)
+            return MutationOperators.rotation_mutation(genes, start, end)
         elif mutation_strategy is 'inversion':
-            return self.inversion_mutation(genes, start, end)
+            return MutationOperators.inversion_mutation(genes, start, end)
         elif mutation_strategy is 'scramble':
-            return self.scramble_mutation(genes, start, end)
+            return MutationOperators.scramble_mutation(genes, start, end)
         elif mutation_strategy is 'swap':
-            return self.swap_mutation(genes, start, end)
+            return MutationOperators.swap_mutation(genes, start, end)
 
-    def swap_mutation(self, genes, start, end):
-        genes[start], genes[end] = genes[end], genes[start]
-        return genes
-
-    def scramble_mutation(self, genes, start, end):
-        genes = np.array(genes)
-        scrambled_order = np.random.choice(np.arange(start, end), end - start)
-        genes[start:end] = genes[scrambled_order]
-        return genes.tolist()
-
-    def rotation_mutation(self, genes, start, end):
-        no_of_reverse = end - start + 1
-        # By incrementing count value swapping
-        # of first and last elements is done.
-        count = 0
-        while no_of_reverse // 2 != count:
-            genes[start + count], genes[end - count] = genes[end - count], genes[start + count]
-            count += 1
-        return genes
-
-    def inversion_mutation(self, genes, start, end):
-        for i in range(start, (start + end) // 2 + 1):
-            genes[i], genes[start + end - i] = genes[start + end - i], genes[i]
-        return genes
-
-    def _generate_two_points(self, len_genes):
-        point_1, point_2 = np.random.choice(len_genes, 2)
+    def _generate_two_points(self):
+        range_of_points = len(self._stu_list)
+        point_1, point_2 = np.random.choice(range_of_points, 2)
         while point_1 == point_2:
-            point_1, point_2 = np.random.choice(len_genes, 2)
+            point_1, point_2 = np.random.choice(range_of_points, 2)
         start, end = min([point_1, point_2]), max([point_1, point_2])
         return start, end
-
-    def crossover_PMX(self, parentGenes, donorGenes, start, end):
-        child_1 = np.array(copy.deepcopy(parentGenes))
-        child_2 = np.array(copy.deepcopy(donorGenes))
-        length = len(parentGenes)
-        start_end_range = range(start, end)
-        left = np.delete(range(length), start_end_range)
-
-        left_parent, left_donor = child_1[left], child_2[left]
-        cross_part_parent, cross_part_donor = child_1[start_end_range], child_2[start_end_range]
-
-        child_1[start_end_range], child_2[start_end_range] = cross_part_donor, cross_part_parent
-
-        mapping = [[], []]
-
-        for i, j in zip(cross_part_parent, cross_part_donor):
-            if j in cross_part_parent and i not in cross_part_donor:
-                index = np.argwhere(cross_part_parent == j)[0, 0]
-                value = cross_part_donor[index]
-                while True:
-                    if value in cross_part_parent:
-                        index = np.argwhere(cross_part_parent == value)[0, 0]
-                        value = cross_part_donor[index]
-                    else:
-                        break
-                mapping[0].append(i)
-                mapping[1].append(value)
-
-            elif i in cross_part_donor:
-                pass
-
-            else:
-                mapping[0].append(i)
-                mapping[1].append(j)
-
-        for i, j in zip(mapping[0], mapping[1]):
-            if i in left_parent:
-                left_parent[np.argwhere(left_parent == i)[0, 0]] = j
-            elif i in left_donor:
-                left_donor[np.argwhere(left_donor == i)[0, 0]] = j
-            if j in left_parent:
-                left_parent[np.argwhere(left_parent == j)[0, 0]] = i
-            elif j in left_donor:
-                left_donor[np.argwhere(left_donor == j)[0, 0]] = i
-
-        child_1[left], child_2[left] = left_parent, left_donor
-        return child_1.tolist()
-
-    def get_candidates(self, pool):
-        total_nums = len(pool) - 1
-        index_1 = random.randint(0, total_nums)
-        index_2 = random.randint(0, total_nums)
-        while index_2 == index_1:
-            index_2 = random.randint(0, total_nums)
-
-        rival_1 = pool[index_1]
-        rival_2 = pool[index_2]
-
-        return rival_1, rival_2
-
-    def tournamentSelection(self, rival_1, rival_2):
-        if rival_1.Rank < rival_2.Rank:
-            return rival_1
-        elif rival_1.Rank == rival_2.Rank:
-            if rival_1.CrowdingDistance > rival_2.CrowdingDistance:
-                return rival_1
-            else:
-                return rival_2
-        else:
-            return rival_2
 
     def displayIndividuals(self, individuals):
         for i in individuals:
